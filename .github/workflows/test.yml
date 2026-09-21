@@ -9,7 +9,7 @@ jobs:
   install-run-uninstall:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The test Mac has no real Mole installed — and doesn't need one.
       # We're testing busy-mole's install/run/uninstall wiring, not Mole's
@@ -65,8 +65,15 @@ jobs:
         run: |
           # BUSY_MOLE_MODE pins the auto-detected mode, so both branches are
           # testable without needing a real terminal (CI has none).
+          # The previous step replaced `mo` with a stub that always fails —
+          # restore a healthy one so this step tests notifications, not errors.
+          printf '#!/bin/bash\necho "fake mo $*"\nexit 0\n' > "$HOME/.local/bin/mo"
+          chmod +x "$HOME/.local/bin/mo"
           before=$(wc -l < "$HOME/.local/state/busy-mole/notify-args.txt")
-          out="$(BUSY_MOLE_MODE=interactive bash "$HOME/.local/bin/busy-mole.sh")"
+          out="$(BUSY_MOLE_MODE=interactive bash "$HOME/.local/bin/busy-mole.sh")" || {
+            echo "interactive run exited non-zero" >&2
+            exit 1
+          }
           echo "$out" | grep -q -- "--- mo clean ---"
           echo "$out" | grep -q -- "--- mo optimize ---"
           echo "$out" | grep -q "run finished"
