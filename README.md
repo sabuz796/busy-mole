@@ -1,247 +1,190 @@
 # busy-mole 🐭
 
-**The mole works while you sleep.**
+**Your Mac cleans itself every Monday at midnight. You never have to think about it.**
 
-*An unofficial helper that schedules [Mole](https://github.com/tw93/mole) — a free, open-source Mac cleanup tool by [tw93](https://github.com/tw93) — to run automatically every week. Not affiliated with or endorsed by the Mole project; all the actual cleaning is done by Mole itself, full credit to them.*
+busy-mole is a tiny helper that makes [Mole](https://github.com/tw93/mole) — a free, open-source Mac cleaning tool — run automatically every week. No clicking, no remembering, no paid apps.
 
----
+- 🧹 **Mole** does the actual cleaning (deletes junk files your Mac doesn't need)
+- ⏰ **busy-mole** is just the weekly alarm clock for it
+- 🔔 You get a quiet notification when a cleanup finishes — and a loud one if something ever goes wrong
+- 🔒 Nothing ever leaves your Mac — no accounts, no tracking, no cloud
 
-## Quick start
-
-> **Prerequisite:** [Mole](https://github.com/tw93/mole) must be installed first (`brew install mole`, or see [Requirements](#-requirements) below).
-
-```bash
-# 1. Get the files (pick one)
-git clone https://github.com/YOUR-USERNAME/busy-mole.git
-cd busy-mole
-
-# 2. Install
-bash install.sh
-
-# 3. Test it right now
-bash ~/.local/bin/busy-mole.sh
-```
-
-That's it. busy-mole will run `mo clean` then `mo optimize` every Monday at midnight. Keep reading for details on what this deletes, how to set it up, and how to change the schedule.
+*busy-mole is unofficial and not affiliated with the Mole project. All the cleaning is done by Mole itself, full credit to [tw93](https://github.com/tw93).*
 
 ---
 
-## What does this delete?
+## What exactly happens?
 
-This is the first question anyone asks, so here it is upfront.
+Once a week (Monday, 12:00 AM), your Mac quietly runs two commands:
 
-**User-level cleanup (always runs):**
-- App and system caches (safe to delete — macOS rebuilds them)
+1. **`mo clean`** — deletes junk: app caches, old logs, browser caches, developer-tool leftovers
+2. **`mo optimize`** — refreshes system caches and services
+
+Then it saves a short log file and shows you a notification with how much disk space is free. That's the whole thing. It works when the screen is locked, and if the Mac is asleep at midnight it simply runs when the Mac next wakes up.
+
+## Is it safe? What gets deleted?
+
+**Deleted (junk your Mac rebuilds on its own):**
+- App and system caches
 - Old log files
-- Browser caches (not your bookmarks, history, or saved passwords)
+- Browser caches
 - Developer tool caches (Xcode, Homebrew, npm, etc.)
 
-**System-level cleanup (skipped by default):**
-- System-level caches that need admin permission
-- Mole detects it's running unattended and skips this step cleanly on its own — nothing hangs, nothing breaks
-
-**What it does NOT touch:**
+**Never touched:**
 - Your documents, photos, music, or videos
 - Browser bookmarks, history, or saved passwords
-- Application settings or preferences
-- Any data you created
+- App settings and preferences
+- Anything you created
 
-Everything it deletes is rebuildable cache data. If you want to see exactly what Mole does before trusting it, run `mo clean` by hand first (Step 1 below).
+Only rebuildable junk is deleted — and you don't have to take our word for it. After installing Mole (next section), run this to see exactly what *would* be deleted, without deleting anything:
 
----
+```bash
+mo clean --dry-run
+```
 
-## What it does
-
-| Detail | Value |
-|---|---|
-| Runs | `mo clean` then `mo optimize`, in that order |
-| Schedule | Every Monday, 12:00 AM |
-| Scheduler | macOS's built-in launchd (the task scheduler that comes with your Mac) |
-| Works locked? | Yes |
-| Works asleep? | Yes, with one extra setup step (Step 6 below) |
-| Cost | Free — no paid tools, no extra dependencies |
+> **One small exception:** a few *system-level* caches need your admin password, and a scheduled job can't type passwords — so those are simply skipped. Nothing hangs, nothing breaks; you still get almost all of the benefit. Advanced users can unlock them via [Optional extras](#optional-extras).
 
 ---
 
-## Requirements
+## Privacy
 
-- macOS (Intel or Apple Silicon)
-- [Mole](https://github.com/tw93/mole) must be installed first
+**Nothing to hide: busy-mole only schedules Mole — it does nothing else.**
 
-**Installing Mole:**
+- **busy-mole itself** is three small shell scripts you can read in a few minutes. They copy one file, register a weekly schedule, and run `mo clean` + `mo optimize`. That's the entire feature list — no network, no accounts, no tracking; there's simply nothing in it that *could* collect your data.
+- **All the actual work — and all the safety decisions — are Mole's.** Mole has no telemetry and reports nothing, which is written into its public [security design](https://github.com/tw93/mole/blob/main/docs/SECURITY_DESIGN.md). Its only network use is checking for its own updates, and *only* when you open its interactive menu or run `mo update` yourself — never during the scheduled cleanups busy-mole runs.
+- Notifications are shown by macOS itself, locally. Logs live only in `~/.local/state/busy-mole/` and clean themselves up (newest 20 kept).
 
-On macOS 14+, the recommended way is with [Homebrew](https://brew.sh) (a free package manager for macOS — if you don't have it, visit [brew.sh](https://brew.sh) for install instructions):
+The only network involved in this whole setup is the day you download Mole and busy-mole. After that: none.
+
+> **Note:** Homebrew (if you used it to install Mole) has its own separate analytics setting — see `brew analytics`. That's Homebrew itself, unrelated to busy-mole or Mole.
+
+---
+
+## Before you start
+
+You need two things:
+
+1. **A Mac with macOS 12 or newer** (any Mac from roughly 2016 onward)
+2. **Mole installed** — remember, busy-mole is only the alarm clock; Mole is the cleaner
+
+### Install Mole
+
+Open **Terminal** (press `Cmd + Space`, type `Terminal`, press Enter). Then paste this and press Enter:
 
 ```bash
 brew install mole
 ```
 
-On older macOS, or without Homebrew:
+<details>
+<summary><strong>Don't have "brew"? Click here</strong></summary>
+
+brew is [Homebrew](https://brew.sh), a free tool that installs other tools — either follow the one-line setup on [brew.sh](https://brew.sh) and then run the command above, or skip brew entirely and use Mole's own installer:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash
 ```
+</details>
 
-Check it worked:
+Check that it worked:
 
 ```bash
 mo --version
 ```
 
+If you see a version number, you're ready.
+
 ---
 
-## Setup
+## Install busy-mole (3 steps)
 
-Throughout this guide:
-- **`~`** (tilde) means your home folder — e.g. `/Users/yourname`
-- **`sudo`** means a command that needs your admin password
-- **Terminal** is the app you type commands into (search for it with Spotlight)
+### Step 1 — Get busy-mole
 
-### Step 1 — Watch it run once, by hand
+In Terminal, paste:
 
 ```bash
-mo clean
-```
-
-This automation will later auto-confirm anything Mole asks (it pipes "yes" to every prompt). Seeing what Mole actually does on your Mac, once, with your own eyes, is worth two minutes before handing it over to a schedule.
-
-> **Tip:** If Mole asks you questions during this manual run, that's normal — you'll see the same prompts skipped in automated mode.
-
-### Step 2 — Get the files
-
-**Option A — if you have Git installed:**
-```bash
-git clone https://github.com/YOUR-USERNAME/busy-mole.git
+git clone https://github.com/sabuz796/busy-mole.git
 cd busy-mole
 ```
 
-**Option B — download the ZIP:**
-1. Go to the busy-mole GitHub page
+<details>
+<summary><strong>No git? Download it by hand instead</strong></summary>
+
+1. Open https://github.com/sabuz796/busy-mole in your browser
 2. Click the green **Code** button → **Download ZIP**
 3. Double-click the downloaded `.zip` file to unzip it
-4. Open Terminal and type `cd ` (with a space), then drag the unzipped folder into the Terminal window and press Enter
+4. In Terminal, type `cd ` (with a space at the end), then drag the unzipped folder into the Terminal window and press Enter
+</details>
 
-### Step 3 — Install
+### Step 2 — Install
 
 ```bash
 bash install.sh
 ```
 
-The installer will:
-1. Check that Mole is installed
-2. Copy the runner script to `~/.local/bin/busy-mole.sh` (a folder in your home directory)
-3. Set up the weekly schedule using macOS's built-in task scheduler (launchd)
-4. Load the schedule so it starts running
+That's it. The installer checks that Mole is present, copies one small script into your home folder, and registers the weekly schedule with macOS.
 
-### Step 4 — Admin password (you can skip this)
-
-Some parts of `mo clean` need `sudo` — your admin password — to clean system-level caches. When Mole detects it's running with no terminal attached (i.e. automated), it skips that step and continues cleanly. You'll see this in the log:
-
-```
-Running in non-interactive mode
-• System-level cleanup skipped, requires sudo
-• User-level cleanup will proceed automatically
-```
-
-**This is fine.** You still get full user-level cleanup (caches, logs, browser data, developer tool caches — which is most of what `mo clean` does). The system-level step is just a small extra.
-
-> **Option A (recommended):** Do nothing. This is the safe default and works great.
-
-<details>
-<summary><strong>Option B — unlock system-level cleanup (advanced, optional)</strong></summary>
-
-You can give your account passwordless admin rights so the system-level step also runs:
-
-```bash
-echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/busy-mole
-sudo chmod 440 /etc/sudoers.d/busy-mole
-```
-
-**Important:** This is not scoped to Mole — your account can run *any* admin command without a password from then on. Only do this on a personal Mac that only you use. Not recommended for shared or work machines.
-
-Verify it worked:
-```bash
-sudo -k && sudo whoami
-```
-Should print `root` with **no** password prompt.
-
-Undo any time:
-```bash
-sudo rm /etc/sudoers.d/busy-mole
-```
-</details>
-
-### Step 5 — Test it right now
+### Step 3 — Try it once, right now
 
 ```bash
 bash ~/.local/bin/busy-mole.sh
 ```
 
-Then check the log:
-```bash
-cat "$(/bin/ls -t ~/.local/state/busy-mole/*.log | head -n 1)"
-```
+You'll watch Mole clean your Mac live in your terminal (a real run, not a drill — worth seeing once with your own eyes). Then, after each weekly run, a notification arrives saying something like *"Weekly cleanup finished. Disk free: 362Gi -> 385Gi"* (that's gigabytes of free space before → after).
 
-**What a successful run looks like:**
-
-```
-=== busy-mole run started: Mon Sep 11 00:00:01 EDT 2026 ===
-Using mo at: /opt/homebrew/bin/mo
---- mo clean ---
-...cleaning output from Mole here...
-(mo clean exit status: 0)
---- mo optimize ---
-...optimize output from Mole here...
-(mo optimize exit status: 0)
-=== busy-mole run finished: Mon Sep 11 00:01:23 EDT 2026 ===
-```
-
-Look for both exit statuses to be `0`. If you see that, everything is working. **Don't move on until this looks right** — everything after this point just schedules the thing you've already confirmed works.
-
-### Step 6 — Make the Mac wake up for it
-
-Your Mac needs to be awake (not fully shut down) to run the scheduled job. If it's asleep at midnight, this wakes it up 5 minutes before:
-
-```bash
-sudo pmset repeat wakeorpoweron M 23:55:00
-```
-
-This wakes the Mac at 11:55 PM every Monday. The day letter is `M` for Monday.
-
-Other days: `S` = Sunday, `T` = Tuesday, `W` = Wednesday, `R` = Thursday, `F` = Friday, `A` = Saturday.
-
-> **Note:** If your Mac is fully shut down (not just asleep), no software can wake it. The machine needs to be asleep, not off. A locked screen is fine — you just need to be logged in.
+**If that worked, you're done.** Everything from here on happens automatically.
 
 ---
 
-## Checking on it later
+## How do I know it's still working, months from now?
+
+You get a notification after each **weekly** run (manual runs show live output in the terminal instead, so no notification), and normally that's all you need. If you ever want proof:
 
 ```bash
-# Is the job still registered with launchd (macOS's task scheduler)?
-launchctl list | grep busy-mole
-
-# List all log files, newest first
-/bin/ls -lt ~/.local/state/busy-mole/
-
-# Read the most recent log
-cat "$(/bin/ls -t ~/.local/state/busy-mole/*.log | head -n 1)"
+# Read the newest log
+cat "$(/bin/ls -t ~/.local/state/busy-mole/2*.log | head -n 1)"
 ```
 
-> **Note:** If `ls` gives you a strange error, you may have a custom `ls` replacement installed. Use `/bin/ls` instead (as shown above) to call the original macOS version.
-
-Worth glancing at occasionally — an automation that fails silently for months is worse than no automation.
+A healthy log shows `(mo clean exit status: 0)` and `(mo optimize exit status: 0)`, plus `Disk free at start` / `Disk free at end` lines. And if a run ever *fails*, the notification makes a sound — a broken automation can't hide.
 
 ---
 
-## Changing the schedule
+## Uninstall completely (one command)
 
-Open the schedule file in any text editor (TextEdit, VS Code, etc.):
+In Terminal:
+
+```bash
+cd busy-mole
+bash uninstall.sh
+```
+
+This removes **everything** busy-mole put on your Mac: the weekly schedule, the helper script, and all its logs. If you set up any optional extras (below), it handles those too — it shows you the wake schedule and asks before cancelling it, and removes the passwordless-admin rule if you created one. Your password is only asked for if those extras were actually set up.
+
+> **Deleted the busy-mole folder already?** Download it again (Step 1) — the uninstaller lives inside it.
+
+**Mole itself stays installed** — busy-mole never touches it, and `mo` keeps working normally by hand. If you want Mole gone too:
+
+```bash
+brew uninstall mole
+```
+
+After that, your Mac is exactly as it was before you found this page.
+
+---
+
+## Optional extras
+
+Everything below is skippable — busy-mole works great without any of it.
+
+<details>
+<summary><strong>🔁 Change the day or time</strong></summary>
+
+Open this file in any text editor:
 
 ```
 ~/Library/LaunchAgents/com.busy-mole.weekly.plist
 ```
 
-Find the `StartCalendarInterval` section and change the numbers. Here's what it looks like:
+Find the `StartCalendarInterval` section and change the numbers:
 
 ```xml
 <key>StartCalendarInterval</key>
@@ -249,30 +192,117 @@ Find the `StartCalendarInterval` section and change the numbers. Here's what it 
     <key>Weekday</key>
     <integer>1</integer>       <!-- 0/7 = Sunday, 1 = Monday, ... 6 = Saturday -->
     <key>Hour</key>
-    <integer>0</integer>       <!-- 24-hour format: 0 = midnight, 14 = 2 PM, 23 = 11 PM -->
+    <integer>0</integer>       <!-- 24-hour: 0 = midnight, 14 = 2 PM, 23 = 11 PM -->
     <key>Minute</key>
     <integer>0</integer>
 </dict>
 ```
 
-After saving, reload the schedule:
+Then reload the schedule:
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.busy-mole.weekly.plist
-launchctl load ~/Library/LaunchAgents/com.busy-mole.weekly.plist
+launchctl bootout "gui/$(id -u)" ~/Library/LaunchAgents/com.busy-mole.weekly.plist
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.busy-mole.weekly.plist
 ```
 
----
+If you also set up the wake-the-Mac extra below, update that too — it uses different day letters (`S` = Saturday, `U` = Sunday there).
+</details>
 
-## Uninstalling
+<details>
+<summary><strong>😴 Wake the Mac so it runs at midnight sharp</strong></summary>
+
+You don't need this: if the Mac is asleep at midnight, the cleanup simply runs later, when the Mac next wakes. The only case a run is skipped entirely is if the Mac is fully **shut down** at midnight.
+
+If you want it to run at midnight sharp anyway, this wakes the Mac 5 minutes early:
 
 ```bash
-bash uninstall.sh
+sudo pmset repeat wakeorpoweron M 23:55:00
 ```
 
-This one command removes everything busy-mole created: the scheduled job, the runner script, all logs, the wake schedule (if you set it up), and the passwordless-sudo rule (if you set it up). It asks for your password once, for the two steps that need `sudo`.
+The day letter is `M` for Monday; the full set is `MTWRFSU`:
 
-**Mole itself (`mo`) is never touched** — it stays installed and works normally by hand afterward, exactly as before.
+| Letter | Day |
+|---|---|
+| `M` | Monday |
+| `T` | Tuesday |
+| `W` | Wednesday |
+| `R` | Thursday |
+| `F` | Friday |
+| `S` | **Saturday** |
+| `U` | Sunday |
+
+⚠️ Watch out: `S` is **Saturday** and `U` is Sunday (think "U" for s**U**nday) — different from the schedule file, where `Weekday` 0 or 7 means Sunday. Change the day in **both** places or they'll disagree.
+
+> **Note:** A Mac that is fully shut down can't be woken for this. Asleep is fine, locked is fine — you just need to be logged in.
+</details>
+
+<details>
+<summary><strong>🔓 Also clean system-level caches (advanced)</strong></summary>
+
+By default, a few system-level caches are skipped because they need your admin password. In the log you'll see:
+
+```
+Running in non-interactive mode
+• System-level cleanup skipped, requires sudo
+• User-level cleanup will proceed automatically
+```
+
+This is normal and fine. If you want those caches cleaned too, you can give your account passwordless admin rights:
+
+```bash
+echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/busy-mole
+sudo chmod 440 /etc/sudoers.d/busy-mole
+
+# Validate the file — a broken sudoers file can break sudo entirely.
+# Must print "parsed OK". If it doesn't, remove the file immediately:
+#   sudo rm /etc/sudoers.d/busy-mole
+sudo visudo -cf /etc/sudoers.d/busy-mole
+```
+
+**Important:** this is not limited to Mole — from then on, *anything* running as you can run admin commands without a password. Only do this on a personal Mac that only you use.
+
+Verify (should print `root` with **no** password prompt):
+
+```bash
+sudo -k && sudo whoami
+```
+
+Undo any time (`uninstall.sh` also removes this automatically):
+
+```bash
+sudo rm /etc/sudoers.d/busy-mole
+```
+</details>
+
+<details>
+<summary><strong>🛡️ Protect a specific cache from cleaning</strong></summary>
+
+If there's a cache you want Mole to leave alone in these automated runs, protect it once:
+
+```bash
+mo clean --whitelist
+```
+
+Mole remembers your choice. To see what past runs actually cleaned:
+
+```bash
+mo history
+```
+</details>
+
+<details>
+<summary><strong>🖼️ A mouse icon on the notifications</strong></summary>
+
+Notifications sent by scripts always show macOS's generic Script Editor icon — Apple doesn't let plain scripts choose one. If you'd like the busy-mole mouse 🐭 on your notifications, install the free [terminal-notifier](https://github.com/julienXX/terminal-notifier) tool:
+
+```bash
+brew install terminal-notifier
+```
+
+busy-mole detects it automatically from the next run — no settings to change. (Honest detail: the icon appears as a thumbnail on the notification; the small app icon still belongs to the tool that posts it.)
+
+Without terminal-notifier, everything works exactly as before — this is pure decoration.
+</details>
 
 ---
 
@@ -280,43 +310,56 @@ This one command removes everything busy-mole created: the scheduled job, the ru
 
 **I'm completely stuck — where do I start?**
 
-1. Open Terminal (search for it with Spotlight)
-2. Type `which mo` and press Enter. If it says `mo not found`, install Mole first (see Requirements above)
-3. Type `bash ~/.local/bin/busy-mole.sh` and press Enter. If it runs, the problem is with the schedule, not the script
-4. Type `launchctl list | grep busy-mole`. If nothing shows up, the schedule didn't load — check for a plist syntax error with `plutil -lint ~/Library/LaunchAgents/com.busy-mole.weekly.plist`
+1. Open Terminal (press `Cmd + Space`, type `Terminal`, press Enter)
+2. Type `which mo` and press Enter. If it says `mo not found`, install Mole first (see [Before you start](#before-you-start))
+3. Type `bash ~/.local/bin/busy-mole.sh` and press Enter. If it runs, the problem is the schedule, not the script — re-run `bash install.sh` from the busy-mole folder
 
 ---
 
 **The log says `command not found: mo`.**
 
-`mo` isn't at one of the paths the script checks. Run `which mo` in a normal terminal to find where it is, then add that folder to the `PATH=` line near the top of `~/.local/bin/busy-mole.sh`.
-
-**The log shows "System-level cleanup skipped, requires sudo."**
-
-This is expected if you chose Option A in Step 4. Mole detects it's running unattended and skips that one step cleanly on its own; everything else still completes.
-
-**Nothing happened at all on the scheduled day.**
-
-Check whether the Mac was actually awake at that time. If asleep and you skipped Step 6, that's very likely why — a missed launchd calendar job isn't guaranteed to run late.
-
-**The log directory is `~/.local/state/busy-mole`, not `~/Library/Logs`.**
-
-This is deliberate. `mo clean` scans and empties folders under `~/Library/Logs` as part of its normal job, which means a log file kept there could get swept away by the very tool it's recording.
+`mo` isn't in one of the folders the script checks. Run `which mo` in a normal Terminal to see where it lives, then add that folder to the `PATH=` line near the top of `~/.local/bin/busy-mole.sh`.
 
 ---
 
-## Glossary
+**The log shows "System-level cleanup skipped, requires sudo".**
+
+That's normal — see [Is it safe?](#is-it-safe-what-gets-deleted). The scheduled job skips the few caches that need your admin password; everything else still completes.
+
+---
+
+**Nothing happened at midnight on the scheduled day.**
+
+- **Mac was asleep?** That's normal — the cleanup runs when the Mac wakes. Check the log after the next wake; the run will be there, just later than midnight.
+- **Mac was fully shut down?** Then the run was skipped. It'll run next week — or set up the wake-the-Mac extra above.
+- **Schedule missing?** Run `launchctl list | grep busy-mole`. If nothing shows up, re-run `bash install.sh`.
+
+---
+
+**No notifications appear after a weekly run.**
+
+macOS files these notifications under **Script Editor** (that's the component that sends them). Enable them in System Settings → Notifications → Script Editor. They also always show the Script Editor icon — that's normal for script-based notifications. (Want the busy-mole mouse 🐭 instead? See [Optional extras](#optional-extras).)
+
+---
+
+**Why are the logs in `~/.local/state/busy-mole` and not `~/Library/Logs`?**
+
+On purpose: `mo clean` clears folders under `~/Library/Logs` as part of its job, so a log kept there could be deleted by the very tool it's recording.
+
+---
+
+## Glossary (what these words mean)
 
 | Term | What it means |
 |---|---|
-| **launchd** | macOS's built-in task scheduler — the system that runs apps and scripts on a schedule. busy-mole uses it to run Mole every week. |
-| **launchctl** | The command-line tool for managing launchd jobs (loading, unloading, checking status). |
-| **plist** | A settings file used by macOS (XML format). The `.plist` file tells launchd what to run and when. |
-| **sudo** | A command that runs with admin privileges. macOS asks for your password when you use it. |
-| **PATH** | A list of folders your Mac searches when you type a command. If `mo` isn't in one of these folders, the script can't find it. |
-| **Homebrew (brew)** | A free package manager for macOS — a tool that installs other tools. Used to install Mole. |
-| **`~` (tilde)** | Short for your home folder (e.g. `/Users/yourname`). `~/.local/bin` means `/Users/yourname/.local/bin`. |
-| **pipe (`\|`)** | Sends the output of one command as the input to the next. Used to chain commands together. |
+| **Mole / `mo`** | The free cleaning tool that does the actual work. Its command is called `mo`. |
+| **launchd** | macOS's built-in task scheduler — runs things on a schedule. busy-mole uses it for the weekly run. |
+| **plist** | A macOS settings file (XML). The `.plist` file tells launchd what to run and when. |
+| **Terminal** | The app you type commands into (find it with `Cmd + Space`). |
+| **sudo** | A command that needs your admin password. |
+| **Homebrew (brew)** | A free tool that installs other tools. Used to install Mole. |
+| **cache** | Temporary files apps create to run faster. Safe to delete — they're rebuilt automatically. |
+| **`~` (tilde)** | Short for your home folder, e.g. `/Users/yourname`. |
 
 ---
 
@@ -326,12 +369,18 @@ This is deliberate. `mo clean` scans and empties folders under `~/Library/Logs` 
 busy-mole/
 ├── README.md
 ├── LICENSE
-├── install.sh
-├── uninstall.sh
+├── install.sh        # copies the runner + icon, registers the launchd job (bootstrap)
+├── uninstall.sh      # removes everything busy-mole created (never touches Mole)
 ├── scripts/
-│   └── busy-mole.sh
-└── launchd/
-    └── com.busy-mole.weekly.plist
+│   └── busy-mole.sh  # runs `mo clean` + `mo optimize`, logs, notifies, rotates logs
+├── assets/
+│   └── icon.png        # notification icon (Twemoji mouse, CC-BY 4.0)
+├── launchd/
+│   └── com.busy-mole.weekly.plist   # Monday 00:00, background priority
+└── .github/
+    └── workflows/
+        ├── lint.yml  # shellcheck + syntax checks on every push
+        └── test.yml  # full install → run → uninstall round-trip on a clean Mac
 ```
 
 ---
@@ -339,4 +388,5 @@ busy-mole/
 ## Credit and license
 
 - [Mole](https://github.com/tw93/mole), by [tw93](https://github.com/tw93), does all the actual cleaning. Licensed under **GPL-3.0** (with an added trademark clause) — check their repo for current terms.
+- The notification icon is the mouse emoji from [Twemoji](https://github.com/twitter/twemoji), licensed [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - The files in this repo are original and released under the [MIT License](LICENSE).
