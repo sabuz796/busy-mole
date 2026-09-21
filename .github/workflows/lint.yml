@@ -1,0 +1,28 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        # Preinstalled on macos runners; only brew-install if missing.
+        run: command -v shellcheck >/dev/null || brew install shellcheck
+
+      - name: Shellcheck all scripts
+        run: shellcheck install.sh uninstall.sh scripts/busy-mole.sh
+
+      - name: Bash syntax check
+        run: |
+          bash -n install.sh
+          bash -n uninstall.sh
+          bash -n scripts/busy-mole.sh
+
+      - name: Lint launchd plist
+        run: plutil -lint launchd/com.busy-mole.weekly.plist

@@ -1,0 +1,86 @@
+name: integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  install-run-uninstall:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The test Mac has no real Mole installed — and doesn't need one.
+      # We're testing busy-mole's install/run/uninstall wiring, not Mole's
+      # cleaning, so a stub that prints and exits 0 stands in for `mo`.
+      # A stub terminal-notifier records the arguments notify() passes, so we
+      # can assert the icon and sound behavior without posting real banners.
+      - name: Create fake mo and terminal-notifier commands
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          printf '#!/bin/bash\necho "fake mo $*"\nexit 0\n' > "$HOME/.local/bin/mo"
+          chmod +x "$HOME/.local/bin/mo"
+          printf '#!/bin/bash\necho "$@" >> "$HOME/.local/state/busy-mole/notify-args.txt"\nexit 0\n' > "$HOME/.local/bin/terminal-notifier"
+          chmod +x "$HOME/.local/bin/terminal-notifier"
+
+      - name: Run installer
+        run: bash install.sh
+
+      - name: Assert install worked
+        run: |
+          test -x "$HOME/.local/bin/busy-mole.sh"
+          test -f "$HOME/Library/LaunchAgents/com.busy-mole.weekly.plist"
+          test -f "$HOME/.local/share/busy-mole/icon.png"
+          plutil -lint "$HOME/Library/LaunchAgents/com.busy-mole.weekly.plist"
+          launchctl list | grep -q com.busy-mole.weekly
+
+      - name: Run the runner script
+        run: bash "$HOME/.local/bin/busy-mole.sh"
+
+      - name: Assert the run produced a proper log
+        run: |
+          log="$(/bin/ls -t "$HOME"/.local/state/busy-mole/2*.log | head -n 1)"
+          grep -q -- "--- mo clean ---" "$log"
+          grep -q -- "--- mo optimize ---" "$log"
+          grep -q "(mo clean exit status: 0)" "$log"
+          grep -q "(mo optimize exit status: 0)" "$log"
+          grep -q "Disk free at start:" "$log"
+          grep -q "Disk free at end:" "$log"
+          # Success notification went through terminal-notifier with the icon, quietly
+          grep -q -- "-contentImage" "$HOME/.local/state/busy-mole/notify-args.txt"
+          ! grep -q -- "-sound" "$HOME/.local/state/busy-mole/notify-args.txt"
+
+      - name: Assert a failing mo is reported as a failure
+        run: |
+          printf '#!/bin/bash\nexit 3\n' > "$HOME/.local/bin/mo"
+          if bash "$HOME/.local/bin/busy-mole.sh"; then
+            echo "runner should have exited non-zero when mo fails" >&2
+            exit 1
+          fi
+          # Failure notification must be audible
+          grep -q -- "-sound Basso" "$HOME/.local/state/busy-mole/notify-args.txt"
+
+      - name: Assert a manual (interactive) run shows live output and does NOT notify
+        run: |
+          # BUSY_MOLE_MODE pins the auto-detected mode, so both branches are
+          # testable without needing a real terminal (CI has none).
+          before=$(wc -l < "$HOME/.local/state/busy-mole/notify-args.txt")
+          out="$(BUSY_MOLE_MODE=interactive bash "$HOME/.local/bin/busy-mole.sh")"
+          echo "$out" | grep -q -- "--- mo clean ---"
+          echo "$out" | grep -q -- "--- mo optimize ---"
+          echo "$out" | grep -q "run finished"
+          after=$(wc -l < "$HOME/.local/state/busy-mole/notify-args.txt")
+          [ "$before" = "$after" ]
+
+      - name: Run uninstaller
+        # No wake schedule or sudoers rule exists on CI, so no prompts occur.
+        run: bash uninstall.sh < /dev/null
+
+      - name: Assert nothing was left behind
+        run: |
+          ! test -e "$HOME/Library/LaunchAgents/com.busy-mole.weekly.plist"
+          ! test -e "$HOME/.local/bin/busy-mole.sh"
+          ! test -e "$HOME/.local/state/busy-mole"
+          ! test -e "$HOME/.local/share/busy-mole"
+          ! launchctl list | grep -q com.busy-mole.weekly
