@@ -1,0 +1,11 @@
+# macOS filesystem metadata
+.DS_Store
+._*
+
+# Editor temporaries
+*.swp
+*.swo
+*~
+
+# Vim
+.netrw.*

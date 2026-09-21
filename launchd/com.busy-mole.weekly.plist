@@ -29,5 +29,12 @@
 
     <key>RunAtLoad</key>
     <false/>
+
+    <!-- Run as a low-priority background job so the midnight cleanup never
+         competes with anything else happening on the Mac. -->
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>LowPriorityIO</key>
+    <true/>
 </dict>
 </plist>
