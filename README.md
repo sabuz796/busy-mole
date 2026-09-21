@@ -1,5 +1,7 @@
 # busy-mole 🐭
 
+[![lint](https://github.com/sabuz796/busy-mole/actions/workflows/lint.yml/badge.svg)](https://github.com/sabuz796/busy-mole/actions/workflows/lint.yml) [![integration](https://github.com/sabuz796/busy-mole/actions/workflows/test.yml/badge.svg)](https://github.com/sabuz796/busy-mole/actions/workflows/test.yml)
+
 **Your Mac cleans itself every Monday at midnight. You never have to think about it.**
 
 busy-mole is a tiny helper that makes [Mole](https://github.com/tw93/mole) — a free, open-source Mac cleaning tool — run automatically every week. No clicking, no remembering, no paid apps.
