@@ -61,6 +61,24 @@ jobs:
           # Failure notification must be audible
           grep -q -- "-sound Basso" "$HOME/.local/state/busy-mole/notify-args.txt"
 
+      - name: Assert an optimize-only failure is reported quietly, not audibly
+        run: |
+          # mo clean succeeds, mo optimize exits 1 — the common real-world
+          # case (a locked file, or a task that needs sudo).
+          printf '#!/bin/bash\nif [ "$1" = "clean" ]; then echo "fake mo clean"; exit 0; fi\necho "fake mo optimize"; exit 1\n' > "$HOME/.local/bin/mo"
+          chmod +x "$HOME/.local/bin/mo"
+          if bash "$HOME/.local/bin/busy-mole.sh"; then
+            echo "runner should exit non-zero when mo optimize fails" >&2
+            exit 1
+          fi
+          last="$(tail -n 1 "$HOME/.local/state/busy-mole/notify-args.txt")"
+          echo "notification: $last"
+          echo "$last" | grep -q "optimize"
+          if echo "$last" | grep -q -- "-sound"; then
+            echo "an optimize-only failure must not be audible" >&2
+            exit 1
+          fi
+
       - name: Assert a manual (interactive) run shows live output and does NOT notify
         run: |
           # BUSY_MOLE_MODE pins the auto-detected mode, so both branches are

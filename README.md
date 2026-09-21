@@ -146,7 +146,7 @@ You get a notification after each **weekly** run (manual runs show live output i
 cat "$(/bin/ls -t ~/.local/state/busy-mole/2*.log | head -n 1)"
 ```
 
-A healthy log shows `(mo clean exit status: 0)` and `(mo optimize exit status: 0)`, plus `Disk free at start` / `Disk free at end` lines. And if a run ever *fails*, the notification makes a sound — a broken automation can't hide.
+A healthy log shows both exit statuses as `0`, plus `Disk free at start` / `Disk free at end` lines. Notifications match what happened: quiet when all is well, a quiet "but `mo optimize` reported a problem" note when only the optimize step grumbles, and a sound only if the cleanup itself *fails* — a broken automation can't hide.
 
 ---
 
@@ -327,6 +327,12 @@ Without terminal-notifier, everything works exactly as before — this is pure d
 **The log shows "System-level cleanup skipped, requires sudo".**
 
 That's normal — see [Is it safe?](#is-it-safe-what-gets-deleted). The scheduled job skips the few caches that need your admin password; everything else still completes.
+
+---
+
+**The notification says "`mo optimize` reported a problem".**
+
+The cleanup itself succeeded — don't worry. One of Mole's optimize tasks hit a snag (a locked file, or a task that needs admin rights). To find out which, run `mo optimize` by hand and look for the ⚠️/failed line in its output.
 
 ---
 

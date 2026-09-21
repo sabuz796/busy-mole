@@ -108,23 +108,26 @@ else
   run_cleanup >> "$LOG_FILE" 2>&1
 fi
 
-# If either step failed, report that as the script's exit status so launchd
-# and any monitoring can tell that something went wrong. Otherwise 0.
+# Exit status: non-zero if either step failed, so launchd and any monitoring
+# can tell something went wrong. A `mo clean` failure takes precedence — it
+# is the step that actually removes data.
 block_status=0
 if [ "$clean_status" -ne 0 ] 2>/dev/null; then
   block_status=$clean_status
-fi
-if [ "$optimize_status" -ne 0 ] 2>/dev/null; then
-  # If both failed, prefer the optimize status (the later step).
+elif [ "$optimize_status" -ne 0 ] 2>/dev/null; then
   block_status=$optimize_status
 fi
 
 # Notifications are for the weekly scheduled runs — a manual run is watched
-# live in the terminal, so it doesn't need one. Audible on failure (a broken
-# automation must not hide), quiet on success.
+# live in the terminal, so it doesn't need one. Audible only when the
+# cleanup itself fails; `mo optimize` reporting a problem (a locked file, or
+# a task that needs sudo) is common and benign, so it gets a quiet note
+# rather than an alarm that would cry wolf every week.
 if [ "$MODE" = "scheduled" ]; then
-  if [ "$block_status" -ne 0 ]; then
-    notify "A cleanup run failed (exit $block_status) - check the newest log in ~/.local/state/busy-mole" audible
+  if [ "$clean_status" -ne 0 ] 2>/dev/null; then
+    notify "Cleanup FAILED (mo clean exit $clean_status) - check the newest log in ~/.local/state/busy-mole" audible
+  elif [ "$optimize_status" -ne 0 ] 2>/dev/null; then
+    notify "Weekly cleanup finished, but mo optimize reported a problem (exit $optimize_status). Disk free: $free_before -> $free_after"
   else
     notify "Weekly cleanup finished. Disk free: $free_before -> $free_after"
   fi
